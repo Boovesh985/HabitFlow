@@ -1,0 +1,17 @@
+﻿# Development database only. Run: docker compose -f docker-compose.dev.yml up -d
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: habitflow-db-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: habitflow
+      POSTGRES_PASSWORD: habitflow
+      POSTGRES_DB: habitflow
+    ports:
+      - "5461:5432"
+    volumes:
+      - habitflow_dev_data:/var/lib/postgresql/data
+
+volumes:
+  habitflow_dev_data:

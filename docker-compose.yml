@@ -1,0 +1,41 @@
+# Production stack: PostgreSQL + HabitFlow (API + web in one container).
+#   1. cp .env.example .env   and fill in the secrets
+#   2. docker compose up -d --build
+#   3. open http://<this-machine>:8080
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: habitflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: habitflow
+    volumes:
+      - habitflow_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U habitflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    image: habitflow:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://habitflow:${POSTGRES_PASSWORD}@db:5432/habitflow?schema=public
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://localhost,capacitor://localhost}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@example.com}
+      ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-true}
+      RUN_SCHEDULER: "true"
+    ports:
+      - "${APP_PORT:-8080}:4000"
+
+volumes:
+  habitflow_data:

@@ -1,0 +1,341 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/*
+  HabitFlow — "the day sheet"
+  Paper, ballpoint ink and rubber stamps. Light is the identity; dark is the same
+  sheet read at night. Colors are OKLCH, neutrals tinted toward the ballpoint hue (266).
+*/
+@theme {
+  --font-sans: "Source Sans 3 Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Big Shoulders Display Variable", "Source Sans 3 Variable", sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  --color-ground: var(--ground);
+  --color-sheet: var(--sheet);
+  --color-well: var(--well);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-pen: var(--pen);
+  --color-pen-soft: var(--pen-soft);
+  --color-red: var(--red);
+  --color-red-soft: var(--red-soft);
+  --color-ok: var(--ok);
+  --color-binding: var(--binding);
+  --color-d1: var(--d1);
+  --color-d2: var(--d2);
+  --color-d3: var(--d3);
+  --color-hl: var(--hl);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+:root {
+  --ground: oklch(0.965 0.006 266);
+  --sheet: oklch(0.995 0.002 266);
+  --well: oklch(0.94 0.008 266);
+  --rule: oklch(0.9 0.01 266);
+  --rule-strong: oklch(0.8 0.015 266);
+  --ink: oklch(0.2 0.025 266);
+  --ink-2: oklch(0.43 0.025 266);
+  --ink-3: oklch(0.62 0.02 266);
+  --pen: oklch(0.49 0.21 266);
+  --pen-soft: oklch(0.92 0.04 266);
+  --red: oklch(0.57 0.2 30);
+  --red-soft: oklch(0.94 0.035 30);
+  --ok: oklch(0.52 0.12 155);
+  --binding: oklch(0.24 0.03 266);
+  --d1: oklch(0.6 0.19 258);
+  --d2: oklch(0.91 0.16 100);
+  --d3: oklch(0.68 0.21 35);
+  --hl: oklch(0.92 0.16 100);
+  --pattern-ink: oklch(0.84 0.02 266);
+  --shape-opacity: 1;
+  --paper-shadow: 0 1px 0 oklch(0.88 0.01 266), 0 12px 32px -20px oklch(0.25 0.05 266 / 0.35);
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --ground: oklch(0.17 0.015 266);
+  --sheet: oklch(0.215 0.018 266);
+  --well: oklch(0.26 0.02 266);
+  --rule: oklch(0.3 0.02 266);
+  --rule-strong: oklch(0.4 0.025 266);
+  --ink: oklch(0.95 0.008 266);
+  --ink-2: oklch(0.76 0.02 266);
+  --ink-3: oklch(0.58 0.02 266);
+  --pen: oklch(0.72 0.15 266);
+  --pen-soft: oklch(0.3 0.06 266);
+  --red: oklch(0.7 0.17 30);
+  --red-soft: oklch(0.3 0.06 30);
+  --ok: oklch(0.74 0.12 155);
+  --binding: oklch(0.33 0.035 266);
+  --paper-shadow: 0 1px 0 oklch(0.12 0.01 266), 0 16px 36px -22px oklch(0 0 0 / 0.7);
+  color-scheme: dark;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  transition: background-color 0.5s var(--ease-out-quart);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1, h2, h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--rule-strong) transparent;
+  }
+}
+
+input,
+textarea {
+  caret-color: var(--pen);
+}
+
+a {
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1.5px;
+}
+
+::selection {
+  background: var(--pen);
+  color: var(--sheet);
+}
+
+:focus-visible {
+  outline: 2px solid var(--pen);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ---------- primitives ---------- */
+
+@utility sheet {
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  box-shadow: var(--paper-shadow);
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-[10px] px-4 py-2.5 text-[15px] font-semibold transition-[background-color,color,border-color,transform] duration-150 select-none active:translate-y-px disabled:pointer-events-none disabled:opacity-45;
+}
+
+@utility btn-pen {
+  @apply btn;
+  background: var(--pen);
+  color: var(--sheet);
+  &:hover {
+    background: color-mix(in oklch, var(--pen) 88%, var(--ink));
+  }
+}
+
+@utility btn-ink {
+  @apply btn;
+  background: var(--ink);
+  color: var(--sheet);
+  &:hover {
+    background: color-mix(in oklch, var(--ink) 85%, var(--pen));
+  }
+}
+
+@utility btn-line {
+  @apply btn;
+  background: var(--sheet);
+  color: var(--ink);
+  border: 1px solid var(--rule-strong);
+  &:hover {
+    background: var(--well);
+  }
+}
+
+@utility btn-quiet {
+  @apply btn;
+  color: var(--ink-2);
+  &:hover {
+    background: var(--well);
+    color: var(--ink);
+  }
+}
+
+@utility field {
+  @apply w-full rounded-[10px] px-3 py-2.5 text-[15px] outline-none transition-[border-color,box-shadow] duration-150;
+  background: var(--sheet);
+  color: var(--ink);
+  border: 1px solid var(--rule-strong);
+  &::placeholder {
+    color: var(--ink-3);
+  }
+  &:focus {
+    border-color: var(--pen);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--pen) 22%, transparent);
+  }
+}
+
+@utility field-label {
+  @apply mb-1.5 block text-sm font-semibold;
+  color: var(--ink);
+}
+
+@utility pill {
+  @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors duration-150;
+  border: 1px solid var(--rule-strong);
+  color: var(--ink-2);
+  background: var(--sheet);
+  &:hover {
+    color: var(--ink);
+  }
+  &[aria-pressed="true"] {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--sheet);
+  }
+}
+
+@utility numeral {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  line-height: 0.9;
+}
+
+@utility mono {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0;
+}
+
+/* Perforated tear line on the day sheet */
+@utility perforation {
+  background-image: radial-gradient(circle, var(--ground) 2.5px, transparent 3px);
+  background-size: 12px 8px;
+  background-repeat: repeat-x;
+  background-position: center;
+  height: 8px;
+}
+
+select.field {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23777' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.25rem;
+}
+
+input[type="time"].field,
+input[type="datetime-local"].field {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+}
+
+.safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom), 0px);
+}
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Horizontal pill rows scroll by swipe; their scrollbar is noise. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ---------- the desk ---------- */
+
+.desk-shapes {
+  mix-blend-mode: multiply;
+}
+[data-theme="dark"] .desk-shapes {
+  mix-blend-mode: normal;
+}
+.desk-shapes > div {
+  mix-blend-mode: multiply;
+}
+[data-theme="dark"] .desk-shapes > div {
+  mix-blend-mode: screen;
+}
+
+@keyframes desk-drift {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(14px, -18px) rotate(5deg); }
+  100% { transform: translate(-10px, 10px) rotate(-4deg); }
+}
+@keyframes desk-spin {
+  to { transform: rotate(360deg); }
+}
+.desk-drift {
+  animation: desk-drift 24s ease-in-out infinite alternate;
+}
+.desk-spin {
+  animation: desk-spin 100s linear infinite;
+}
+
+/* Washi tape: translucent, striped, torn ends. */
+@utility tape {
+  position: absolute;
+  height: 22px;
+  width: 86px;
+  background:
+    repeating-linear-gradient(-45deg, transparent 0 6px, color-mix(in oklch, white 22%, transparent) 6px 9px),
+    color-mix(in oklch, var(--tape, var(--d2)) 78%, transparent);
+  clip-path: polygon(0 8%, 4% 0, 9% 10%, 14% 0, 86% 0, 91% 9%, 96% 0, 100% 10%, 100% 92%, 96% 100%, 91% 90%, 86% 100%, 14% 100%, 9% 91%, 4% 100%, 0 92%);
+  box-shadow: 0 1px 2px oklch(0.2 0.03 266 / 0.12);
+  pointer-events: none;
+  z-index: 2;
+}
+[data-theme="dark"] .tape {
+  opacity: 0.75;
+}
+
+/* View transition for switching desks: the new desk wipes in as a circle from the tap. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-new(root) {
+  animation: desk-reveal 0.7s var(--ease-out-expo) both;
+}
+@keyframes desk-reveal {
+  from { clip-path: circle(0 at var(--vt-x, 50%) var(--vt-y, 50%)); }
+  to { clip-path: circle(150vmax at var(--vt-x, 50%) var(--vt-y, 50%)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desk-drift, .desk-spin { animation: none; }
+  ::view-transition-new(root) { animation: none; }
+}

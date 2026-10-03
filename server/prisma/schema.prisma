@@ -1,0 +1,248 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum FrequencyType {
+  DAILY
+  WEEKLY_DAYS
+  TIMES_PER_WEEK
+}
+
+enum HabitKind {
+  BUILD
+  QUIT
+}
+
+enum CheckInStatus {
+  DONE
+  SKIPPED
+  FROZEN
+  SLIP
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  avatar       String   @default("🌱")
+  timezone     String   @default("UTC")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  habits        Habit[]
+  checkIns      CheckIn[]
+  reminders     Reminder[]
+  tasks         Task[]
+  projects      Project[]
+  moods         MoodEntry[]
+  focusSessions FocusSession[]
+  achievements  UserAchievement[]
+  refreshTokens RefreshToken[]
+  pushSubs      PushSubscription[]
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Habit {
+  id            String        @id @default(uuid())
+  userId        String
+  name          String
+  description   String?
+  icon          String        @default("✨")
+  color         String        @default("#8b5cf6")
+  category      String        @default("General")
+  kind          HabitKind     @default(BUILD)
+  frequencyType FrequencyType @default(DAILY)
+  daysOfWeek    Int[]         @default([]) // 0 = Sunday ... 6 = Saturday
+  timesPerWeek  Int           @default(3)
+  targetCount   Int           @default(1)
+  unit          String?
+  startDate     DateTime      @db.Date
+  sortOrder     Int           @default(0)
+  stackAfterId  String?       // habit stacking: "after I do X, I will do this"
+  archivedAt    DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checkIns   CheckIn[]
+  reminders  Reminder[]
+  projects   Project[]
+  stackAfter Habit?     @relation("Stack", fields: [stackAfterId], references: [id], onDelete: SetNull)
+  stackedBy  Habit[]    @relation("Stack")
+  focus      FocusSession[]
+
+  @@index([userId])
+}
+
+model CheckIn {
+  id        String        @id @default(uuid())
+  habitId   String
+  userId    String
+  date      DateTime      @db.Date
+  count     Int           @default(1)
+  status    CheckInStatus @default(DONE)
+  note      String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, date])
+  @@index([userId, date])
+}
+
+model Reminder {
+  id         String    @id @default(uuid())
+  habitId    String
+  userId     String
+  time       String    // "HH:mm" in the user's timezone
+  daysOfWeek Int[]     @default([]) // empty = every day the habit is due
+  message    String?
+  enabled    Boolean   @default(true)
+  lastSentAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([enabled, time])
+}
+
+model Task {
+  id             String    @id @default(uuid())
+  userId         String
+  title          String
+  notes          String?
+  priority       Int       @default(1) // 0 low, 1 normal, 2 high
+  dueAt          DateTime?
+  remindAt       DateTime?
+  reminderSentAt DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([remindAt])
+}
+
+model MoodEntry {
+  id        String   @id @default(uuid())
+  userId    String
+  date      DateTime @db.Date
+  mood      Int // 1..5
+  energy    Int? // 1..5
+  note      String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+}
+
+model FocusSession {
+  id          String   @id @default(uuid())
+  userId      String
+  habitId     String?
+  durationSec Int
+  startedAt   DateTime
+  createdAt   DateTime @default(now())
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habit Habit? @relation(fields: [habitId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+}
+
+model UserAchievement {
+  id         String   @id @default(uuid())
+  userId     String
+  key        String
+  unlockedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum ProjectKind {
+  PROJECT
+  COURSE
+}
+
+/// Something with a finish line: assigned work or a course. Steps are its checklist.
+model Project {
+  id             String      @id @default(uuid())
+  userId         String
+  kind           ProjectKind @default(PROJECT)
+  title          String
+  description    String?
+  icon           String      @default("target")
+  color          String      @default("#2f45d6")
+  deadline       DateTime?
+  totalUnits     Int? // courses: lessons / modules / videos
+  unitsDone      Int         @default(0)
+  unitLabel      String?
+  habitId        String? // linked recurring study / work-session habit
+  nudge          Boolean     @default(true) // weekly nudge when the project goes quiet
+  lastActivityAt DateTime    @default(now())
+  lastNudgeAt    DateTime?
+  deadlineStage  Int         @default(0) // deadline reminders already sent: 1 = 3 days, 2 = 1 day, 3 = 3 hours, 4 = due
+  sortOrder      Int         @default(0)
+  completedAt    DateTime?
+  archivedAt     DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habit Habit?        @relation(fields: [habitId], references: [id], onDelete: SetNull)
+  steps ProjectStep[]
+
+  @@index([userId])
+  @@index([deadline])
+}
+
+model ProjectStep {
+  id        String    @id @default(uuid())
+  projectId String
+  title     String
+  doneAt    DateTime?
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}

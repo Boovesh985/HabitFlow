@@ -1,0 +1,23 @@
+node_modules/
+dist/
+.env
+*.log
+.DS_Store
+client/android/app/build/
+client/android/build/
+client/android/capacitor-cordova-android-plugins/build/
+*.tsbuildinfo
+client/android/.gradle/
+client/android/local.properties
+*.apk
+.impeccable/
+.claude/
+.agents/
+
+# IDE
+.vscode/
+.idea/
+
+# Java error logs
+hs_err_pid*.log
+replay_pid*.log
