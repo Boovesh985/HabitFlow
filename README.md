@@ -124,7 +124,7 @@ The app is now at `http://<machine-ip>:8080` (website, API and PWA together).
 
 ### Option B: cloud (no server to maintain)
 
-**Render**: push this folder to GitHub, then in Render choose **New → Blueprint** and pick the repo. `render.yaml` creates the web service and the database. Add `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` in the dashboard.
+**Render + Neon (free)**: create a free PostgreSQL project on [Neon](https://neon.com) and copy its direct (non-pooled) connection string. Then in Render choose **New → Blueprint** and pick the repo. `render.yaml` creates a free web service and asks for `DATABASE_URL` (the Neon string), `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` (`mailto:you@…`). The free service sleeps after 15 minutes idle and takes about a minute to wake. Android reminders are unaffected because they're scheduled on the phone; for reliable browser push, switch the service to the paid `starter` plan.
 
 **Railway / Fly.io / Koyeb**: deploy the root `Dockerfile` and attach a PostgreSQL database (or a free one from [Neon](https://neon.tech)). Set the env vars from `.env.example`, with `DATABASE_URL` pointing at the database. Migrations run automatically on start.
 
@@ -144,7 +144,7 @@ adb install -r client/android/app/build/outputs/apk/debug/app-debug.apk
 
 **Server address:** the app has no in-app server setting. The address is baked in at build time:
 create `client/.env` with `VITE_API_URL=https://your-server` before `npm run android:apk`.
-- Deployed (planned: Render): `https://<your-app>.onrender.com`
+- Deployed on Render: `https://<your-app>.onrender.com`
 - Testing on the same Wi-Fi: `http://<your-PC-IP>:8080` (Docker) or `:4000` (dev)
 
 Then go to **Settings → Notifications → Enable**. On Android 12+ also tap **Allow exact alarms** if shown, so reminders arrive on the minute.
