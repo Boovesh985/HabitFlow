@@ -7,6 +7,7 @@ import { HttpError } from "../lib/http.js";
 import { isValidTimezone, toDay } from "../lib/dates.js";
 import { uid } from "../middleware/auth.js";
 import { checkInView, reminderView } from "../services/habitView.js";
+import { pushSubscribersChanged } from "../services/push.js";
 
 export const usersRouter = Router();
 
@@ -72,5 +73,6 @@ usersRouter.delete("/me", async (req, res) => {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: uid(req) } });
   if (!(await bcrypt.compare(password, user.passwordHash))) throw new HttpError(400, "Password is incorrect");
   await prisma.user.delete({ where: { id: user.id } });
+  pushSubscribersChanged();
   res.json({ ok: true });
 });

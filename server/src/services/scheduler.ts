@@ -1,9 +1,9 @@
 import cron from "node-cron";
-import { prisma } from "../db.js";
+import { holdDb, prisma } from "../db.js";
 import { nowInTz, toDate } from "../lib/dates.js";
 import { computeStats, isDue } from "./streaks.js";
 import { checkInLite, habitSchedule } from "./habitView.js";
-import { actionToken, pushEnabled, sendToUser } from "./push.js";
+import { actionToken, hasPushSubscribers, pushEnabled, sendToUser } from "./push.js";
 
 const NUDGES = [
   "Small steps count. Start this one.",
@@ -200,18 +200,26 @@ export function snoozeHabit(userId: string, habitId: string, minutes = 10) {
 export function startScheduler() {
   if (!pushEnabled) console.warn("[scheduler] running without push; reminders will only fire on Android local notifications");
   cron.schedule("* * * * *", async () => {
+    // These reminders go out as web push only; the Android app schedules its own on the phone.
+    // With no browser subscribed there's nobody to send to, so leave the database asleep.
+    const release = holdDb();
     try {
+      if (!(await hasPushSubscribers())) return;
       await runHabitReminders();
       await runTaskReminders();
       await runProjectReminders();
     } catch (err) {
       console.error("[scheduler] tick failed", err);
+    } finally {
+      release();
     }
   });
   cron.schedule("17 3 * * *", async () => {
+    const release = holdDb();
     await prisma.refreshToken
       .deleteMany({ where: { OR: [{ expiresAt: { lt: new Date() } }, { revokedAt: { lt: new Date(Date.now() - 7 * 86_400_000) } }] } })
-      .catch((e) => console.error("[scheduler] cleanup failed", e));
+      .catch((e) => console.error("[scheduler] cleanup failed", e))
+      .finally(release);
   });
   console.log("[scheduler] reminder scheduler started");
 }

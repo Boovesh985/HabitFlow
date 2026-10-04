@@ -4,7 +4,7 @@ import { prisma } from "../db.js";
 import { HttpError } from "../lib/http.js";
 import { addDays, nowInTz, toDate } from "../lib/dates.js";
 import { requireAuth, uid } from "../middleware/auth.js";
-import { pushEnabled, sendToUser, verifyActionToken } from "../services/push.js";
+import { pushEnabled, pushSubscribersChanged, sendToUser, verifyActionToken } from "../services/push.js";
 import { snoozeHabit } from "../services/scheduler.js";
 import { evaluateAchievements } from "../services/gamification.js";
 
@@ -25,12 +25,14 @@ pushRouter.post("/subscribe", requireAuth, async (req, res) => {
     userAgent: req.headers["user-agent"]?.slice(0, 300),
   };
   await prisma.pushSubscription.upsert({ where: { endpoint: body.endpoint }, create: { endpoint: body.endpoint, ...data }, update: data });
+  pushSubscribersChanged();
   res.json({ ok: true });
 });
 
 pushRouter.post("/unsubscribe", requireAuth, async (req, res) => {
   const { endpoint } = z.object({ endpoint: z.string() }).parse(req.body);
   await prisma.pushSubscription.deleteMany({ where: { endpoint, userId: uid(req) } });
+  pushSubscribersChanged();
   res.json({ ok: true });
 });
 

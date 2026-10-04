@@ -5,7 +5,7 @@ import compression from "compression";
 import path from "node:path";
 import fs from "node:fs";
 import { config } from "./config.js";
-import { prisma } from "./db.js";
+import { holdDb, prisma } from "./db.js";
 import { requireAuth } from "./middleware/auth.js";
 import { errorHandler } from "./middleware/error.js";
 import { authRouter } from "./routes/auth.js";
@@ -35,9 +35,20 @@ export function createApp() {
   app.use(compression());
   app.use(express.json({ limit: "1mb" }));
 
-  app.get("/api/health", async (_req, res) => {
-    await prisma.$queryRaw`SELECT 1`;
+  // Liveness only. Render polls this and an uptime pinger keeps the free instance awake with it,
+  // so it must not touch the database, or a scale-to-zero database would never sleep either.
+  app.get("/api/health", (_req, res) => {
     res.json({ ok: true, time: new Date().toISOString() });
+  });
+  app.get("/api/health/db", async (_req, res) => {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ ok: true, db: true, time: new Date().toISOString() });
+  });
+
+  app.use("/api", (req, res, next) => {
+    if (req.path === "/health") return next();
+    res.on("close", holdDb());
+    next();
   });
 
   app.use("/api/auth", authRouter);
