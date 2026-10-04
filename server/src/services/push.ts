@@ -20,6 +20,28 @@ export interface PushPayload {
   data?: Record<string, unknown>;
 }
 
+/**
+ * Whether any browser can receive a push. Cached so the per-minute reminder scan can skip the database
+ * entirely when nobody is subscribed, letting a scale-to-zero database sleep. Re-read every 6 hours
+ * and whenever a subscription is added or removed.
+ */
+let subscriberCount: number | null = null;
+let countedAt = 0;
+const RECOUNT_MS = 6 * 3_600_000;
+
+export async function hasPushSubscribers() {
+  if (!pushEnabled) return false;
+  if (subscriberCount === null || Date.now() - countedAt > RECOUNT_MS) {
+    subscriberCount = await prisma.pushSubscription.count();
+    countedAt = Date.now();
+  }
+  return subscriberCount > 0;
+}
+
+export function pushSubscribersChanged() {
+  subscriberCount = null;
+}
+
 export async function sendToUser(userId: string, payload: PushPayload): Promise<number> {
   if (!pushEnabled) return 0;
   const subs = await prisma.pushSubscription.findMany({ where: { userId } });
@@ -35,7 +57,10 @@ export async function sendToUser(userId: string, payload: PushPayload): Promise<
         sent++;
       } catch (err: unknown) {
         const code = (err as { statusCode?: number }).statusCode;
-        if (code === 404 || code === 410) await prisma.pushSubscription.delete({ where: { id: s.id } }).catch(() => {});
+        if (code === 404 || code === 410) {
+          await prisma.pushSubscription.delete({ where: { id: s.id } }).catch(() => {});
+          pushSubscribersChanged();
+        }
         else console.error("[push] send failed", code, (err as Error).message);
       }
     }),

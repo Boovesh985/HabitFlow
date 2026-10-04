@@ -1,7 +1,8 @@
 # Free cloud deploy on Render (https://render.com): Dashboard -> New -> Blueprint -> pick this repo.
 # The database lives on Neon's free plan (https://neon.com): paste its direct connection string as DATABASE_URL.
-# Free web services sleep after 15 min idle; Android reminders still fire (they're scheduled on the phone),
-# but browser push reminders need the paid "starter" plan to run 24/7.
+# Free web services sleep after 15 min idle. To keep it awake, have an uptime pinger (e.g. cron-job.org)
+# GET /api/health every 10 minutes: that endpoint never touches the database, and the server closes its
+# database connections when idle, so Neon still scales to zero and stays inside its free compute hours.
 services:
   - type: web
     name: habitflow
