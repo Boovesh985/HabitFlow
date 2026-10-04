@@ -6,7 +6,7 @@ import { useCheckIn, useFocusSessions, useHabits, useLogFocus } from "../lib/hoo
 import { useUI } from "../lib/store";
 import { dayComplete, tap } from "../lib/celebrate";
 import { isNative } from "../lib/platform";
-import { PageTitle, SectionHead, Segmented } from "../components/ui";
+import { NumberInput, PageTitle, SectionHead, Segmented } from "../components/ui";
 
 type Mode = "focus" | "short" | "long";
 const DURATIONS: Record<Mode, number> = { focus: 25, short: 5, long: 15 };
@@ -254,15 +254,13 @@ export default function FocusPage() {
               <div className="grid grid-cols-3 gap-2">
                 {(Object.keys(DURATIONS) as Mode[]).map((m) => (
                   <label key={m} className="block">
-                    <input
-                      type="number"
+                    <NumberInput
                       min={1}
                       max={180}
                       className="field text-center"
                       value={minutes[m]}
                       disabled={running}
-                      onChange={(e) => {
-                        const v = Math.max(1, Math.min(180, Number(e.target.value) || 1));
+                      onChange={(v) => {
                         setMinutes((x) => ({ ...x, [m]: v }));
                         if (m === mode) setRemaining(v * 60);
                       }}

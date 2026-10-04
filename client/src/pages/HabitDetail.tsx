@@ -12,7 +12,7 @@ import { HabitIcon } from "../components/HabitIcon";
 import { useHabitForm } from "../components/Layout";
 import { Heatmap } from "../components/Heatmap";
 import { StampMark } from "../components/Stamp";
-import { Loading, SectionHead, Sheet } from "../components/ui";
+import { Loading, NumberInput, SectionHead, Sheet } from "../components/ui";
 
 export default function HabitDetailPage() {
   const { id } = useParams();
@@ -258,7 +258,7 @@ function DayEditor({ habit: h, day, entry, onClose }: { habit: Habit; day: strin
               {h.targetCount > 1 && (
                 <div className="flex items-center gap-3">
                   <label className="field-label !mb-0" htmlFor="amt">Amount</label>
-                  <input id="amt" type="number" min={0} className="field !w-24" value={count} onChange={(e) => setCount(Math.max(0, Number(e.target.value) || 0))} />
+                  <NumberInput id="amt" min={0} className="field !w-24" value={count} onChange={setCount} />
                   <span className="text-[15px] text-ink-2">of {h.targetCount} {h.unit}</span>
                 </div>
               )}

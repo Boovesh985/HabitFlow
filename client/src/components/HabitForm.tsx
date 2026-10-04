@@ -6,7 +6,7 @@ import type { Habit, HabitInput, Reminder } from "../lib/types";
 import { useHabits, useSaveHabit } from "../lib/hooks";
 import { useUI } from "../lib/store";
 import { WEEKDAYS_LETTER, WEEKDAYS_SHORT } from "../lib/dates";
-import { Segmented, Sheet, Spinner } from "./ui";
+import { NumberInput, Segmented, Sheet, Spinner } from "./ui";
 import { HABIT_ICONS, HABIT_ICON_NAMES, HabitIcon } from "./HabitIcon";
 
 export const ICONS = HABIT_ICON_NAMES;
@@ -598,15 +598,7 @@ export function HabitForm({ open, onClose, habit }: { open: boolean; onClose: ()
                 <label className="field-label" htmlFor="target">
                   Each day
                 </label>
-                <input
-                  id="target"
-                  type="number"
-                  min={1}
-                  max={1000}
-                  className="field"
-                  value={f.targetCount}
-                  onChange={(e) => set("targetCount", Math.max(1, Number(e.target.value) || 1))}
-                />
+                <NumberInput id="target" min={1} max={1000} className="field" value={f.targetCount} onChange={(n) => set("targetCount", n)} />
               </div>
               <div>
                 <label className="field-label" htmlFor="unit">

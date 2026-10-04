@@ -427,3 +427,54 @@ export function PasswordInput({ className, ...props }: Omit<InputHTMLAttributes<
     </div>
   );
 }
+
+/**
+ * Whole-number field that can be cleared while typing. A value in range is committed as you type;
+ * leaving the field empty or out of range snaps it back to the nearest allowed number.
+ */
+export function NumberInput({
+  value,
+  onChange,
+  min,
+  max = 100000,
+  ...props
+}: Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "value" | "onChange" | "min" | "max"> & {
+  value: number;
+  onChange: (v: number) => void;
+  min: number;
+  max?: number;
+}) {
+  const [draft, setDraft] = useState(String(value));
+  const focused = useRef(false);
+  useEffect(() => {
+    if (!focused.current) setDraft(String(value));
+  }, [value]);
+  const clamp = (n: number) => Math.min(max, Math.max(min, Math.round(n)));
+  return (
+    <input
+      {...props}
+      type="text"
+      inputMode="numeric"
+      pattern="[0-9]*"
+      value={draft}
+      onFocus={(e) => {
+        focused.current = true;
+        e.currentTarget.select();
+        props.onFocus?.(e);
+      }}
+      onChange={(e) => {
+        const text = e.target.value.replace(/\D/g, "");
+        setDraft(text);
+        const n = Number(text);
+        if (text && n >= min && n <= max) onChange(n);
+      }}
+      onBlur={(e) => {
+        focused.current = false;
+        const next = draft ? clamp(Number(draft)) : value;
+        setDraft(String(next));
+        if (next !== value) onChange(next);
+        props.onBlur?.(e);
+      }}
+    />
+  );
+}
