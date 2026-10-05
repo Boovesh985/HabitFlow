@@ -63,15 +63,6 @@ export default function TodayPage() {
   const week = overview?.heatmap.slice(-7) ?? Array.from({ length: 7 }, (_, i) => ({ date: addDays(today, i - 6), done: 0, due: 0 }));
   const sheetHabits = counted;
 
-  // The arc starts on the earliest habit (or the day the account was made) and counts every day since.
-  const arcDay = useMemo(() => {
-    const starts = (habits ?? []).map((h) => h.startDate).filter(Boolean);
-    if (user?.createdAt) starts.push(user.createdAt.slice(0, 10));
-    if (!starts.length) return 0;
-    const first = starts.sort()[0];
-    return Math.max(1, Math.round((parseDay(today).getTime() - parseDay(first).getTime()) / 86_400_000) + 1);
-  }, [habits, user?.createdAt, today]);
-
   if (isLoading) return <Loading />;
 
   return (
@@ -97,12 +88,6 @@ export default function TodayPage() {
           )}
           .
         </p>
-        {arcDay > 0 && (
-          <p className="-mt-5 flex flex-wrap items-baseline gap-x-2 text-[15px] text-ink-2">
-            <span className="numeral text-[30px] font-extrabold text-pen">Day {arcDay}</span>
-            of your arc. Week {Math.ceil(arcDay / 7)}.
-          </p>
-        )}
 
         {!habits?.length ? (
           <Empty
