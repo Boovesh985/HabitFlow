@@ -35,7 +35,7 @@ export function DaySheet({
 
   const line =
     empty
-      ? "Day one. Add a habit to start the arc."
+      ? "No habits yet. Add one to fill this page."
       : dueCount === 0
       ? "Rest day. Recovery is part of the arc."
       : perfect
