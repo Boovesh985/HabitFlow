@@ -37,9 +37,8 @@ A habit tracker for the **web** (installable PWA) and **Android** (native app), 
 **Insights and motivation**
 - GitHub-style **year heatmap** (overall and per habit)
 - Best weekdays, week-over-week trend, category breakdown
-- **Mood tracking** with a **mood × habits** correlation insight
 - **Focus timer** (Pomodoro) that can be linked to a habit and auto-complete it when the session ends
-- **XP, levels and 21 achievements** (bronze → legendary), with confetti, sounds and haptics
+- **XP, levels and 20 achievements** (bronze → legendary), with confetti, sounds and haptics
 - **Character sheet**: five stats (Strength, Intellect, Vitality, Discipline, Presence) that level up from the habits that train them
 
 **Everything else**
@@ -65,7 +64,7 @@ Habit tracker/
 ├── client/                 React app (web + Android)
 │   ├── src/
 │   │   ├── pages/          Today, Habits, HabitDetail, Projects, ProjectDetail, Stats, Tasks, Focus, Achievements, Settings, Auth
-│   │   ├── components/     HabitCard, HabitForm, ProjectForm, Character, Desk, Heatmap, Mood, Layout, ui
+│   │   ├── components/     HabitCard, HabitForm, ProjectForm, Character, Desk, Heatmap, NoteSheet, Layout, ui
 │   │   └── lib/            api client, hooks, stores, notifications, dates, celebrate
 │   ├── public/             sw.js (service worker), manifest, icons
 │   ├── android/            Capacitor Android project

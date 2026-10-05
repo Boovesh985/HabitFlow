@@ -1,7 +1,31 @@
-// Calendar-day helpers on "YYYY-MM-DD" strings in the device's local timezone.
+// Calendar-day helpers on "YYYY-MM-DD" strings. "Now" is always read in India Standard Time;
+// calendar arithmetic on a given date uses that date's own year/month/day.
 export const pad = (n: number) => String(n).padStart(2, "0");
 
-export function localDay(d = new Date()): string {
+export const APP_TIMEZONE = "Asia/Kolkata";
+
+/** Current date and time parts in IST, whatever the device's timezone. */
+export function nowIST(now = new Date()) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: APP_TIMEZONE,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23",
+    })
+      .formatToParts(now)
+      .map((p) => [p.type, p.value])
+  );
+  return { day: `${parts.year}-${parts.month}-${parts.day}`, hour: Number(parts.hour) };
+}
+
+/** Today's date in IST, or the calendar date of `d`. */
+export function localDay(d?: Date): string {
+  if (!d) return nowIST().day;
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
@@ -30,7 +54,7 @@ export function formatDay(
   return parseDay(day).toLocaleDateString(undefined, opts);
 }
 
-export function greeting(hour = new Date().getHours()) {
+export function greeting(hour = nowIST().hour) {
   if (hour < 5) return "Burning the midnight oil";
   if (hour < 12) return "Good morning";
   if (hour < 17) return "Good afternoon";
@@ -38,9 +62,6 @@ export function greeting(hour = new Date().getHours()) {
   return "Winding down";
 }
 
-export function deviceTimezone() {
-  return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-}
 
 export function formatTime12(hhmm: string) {
   const [h, m] = hhmm.split(":").map(Number);

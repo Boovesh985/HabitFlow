@@ -11,7 +11,6 @@ import {
   Medal,
   Moon,
   Rocket,
-  Smile,
   Star,
   Sunrise,
   Target,
@@ -52,7 +51,6 @@ const ICONS: Record<string, LucideIcon> = {
   night_owl: Moon,
   focus_first: Timer,
   focus_master: Hourglass,
-  mood_week: Smile,
   task_slayer: ListChecks,
   breaking_free: Bird,
   first_brick: Blocks,
@@ -137,7 +135,7 @@ export default function AchievementsPage() {
           {unlocked.length > 0 && <SealGrid title="Collected" items={unlocked} />}
           {locked.length > 0 && <SealGrid title="Still to earn" items={locked} offset={unlocked.length} />}
           <p className="max-w-[62ch] text-[14px] text-ink-2">
-            XP comes from what you actually do: 10 per completed check-in, 1 per minute of focus, 5 per mood logged, 5 per task finished. Every 25 completions also earns
+            XP comes from what you actually do: 10 per completed check-in, 1 per minute of focus, 5 per task finished. Every 25 completions also earns
             a streak freeze.
           </p>
         </div>

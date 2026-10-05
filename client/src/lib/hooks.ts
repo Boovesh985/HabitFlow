@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, withDay } from "./api";
 import { useUI } from "./store";
-import type { Achievement, CheckInStatus, Habit, HabitInput, Mood, Overview, Profile, Project, Task } from "./types";
+import type { Achievement, CheckInStatus, Habit, HabitInput, Overview, Profile, Project, Task } from "./types";
 
 export const qk = {
   habits: (day: string, archived = false) => ["habits", day, archived] as const,
@@ -10,7 +10,6 @@ export const qk = {
   profile: ["profile"] as const,
   achievements: ["achievements"] as const,
   tasks: ["tasks"] as const,
-  moods: ["moods"] as const,
   focus: ["focus"] as const,
   projects: ["projects"] as const,
 };
@@ -216,30 +215,6 @@ export function useTaskMutations() {
     onSuccess: done,
   });
   return { create, update, remove };
-}
-
-export function useMoods() {
-  const day = useUI((s) => s.today);
-  return useQuery({
-    queryKey: qk.moods,
-    queryFn: () => api<{ moods: Mood[] }>(withDay("/moods", day)).then((r) => r.moods),
-  });
-}
-
-export function useSaveMood() {
-  const qc = useQueryClient();
-  const day = useUI((s) => s.today);
-  return useMutation({
-    mutationFn: (m: Mood) => api<{ mood: Mood; newAchievements?: Achievement[] }>(withDay(`/moods/${m.date}`, day), { method: "PUT", body: m }),
-    onMutate: (m) => {
-      qc.setQueryData<Mood[]>(qk.moods, (l) => [...(l ?? []).filter((x) => x.date !== m.date), m]);
-    },
-    onSuccess: (r) => {
-      useUI.getState().achievementToasts(r.newAchievements);
-      qc.invalidateQueries({ queryKey: ["overview"] });
-      qc.invalidateQueries({ queryKey: qk.profile });
-    },
-  });
 }
 
 export interface FocusSessionRow {

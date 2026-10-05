@@ -154,19 +154,11 @@ export interface Project {
   nextStep: string | null;
 }
 
-export interface Mood {
-  date: string;
-  mood: number;
-  energy: number | null;
-  note: string | null;
-}
-
 export interface Overview {
   today: string;
   profile: Profile;
   heatmap: { date: string; done: number; due: number }[];
   weekdays: { weekday: number; rate: number }[];
-  moodCorrelation: { mood: number; days: number; avgCompletion: number }[];
   categories: { name: string; done: number; habits: number }[];
   completion: { last7: number; prev7: number; last30: number };
   focusByDay: { date: string; minutes: number }[];

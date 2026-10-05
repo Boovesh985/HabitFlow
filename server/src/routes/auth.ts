@@ -49,7 +49,7 @@ authRouter.post("/register", limiter, async (req, res) => {
       email: body.email,
       name: body.name,
       passwordHash: await bcrypt.hash(body.password, 12),
-      timezone: body.timezone && isValidTimezone(body.timezone) ? body.timezone : "UTC",
+      timezone: body.timezone && isValidTimezone(body.timezone) ? body.timezone : "Asia/Kolkata",
     },
   });
   res.status(201).json({ user: userView(user), ...(await issueTokens(user.id)) });

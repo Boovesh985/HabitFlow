@@ -13,7 +13,7 @@ import type { Habit } from "../lib/types";
 import { HabitCard } from "../components/HabitCard";
 import { DaySheet } from "../components/DaySheet";
 import { useHabitForm } from "../components/Layout";
-import { MoodPicker, NoteSheet } from "../components/Mood";
+import { NoteSheet } from "../components/NoteSheet";
 import { Empty, Loading, Scribble, SectionHead } from "../components/ui";
 import { CharacterSheet } from "../components/Character";
 
@@ -69,9 +69,6 @@ export default function TodayPage() {
     <div className="grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-10">
       <aside className="space-y-5 lg:sticky lg:top-[84px] lg:self-start">
         <DaySheet day={today} habits={sheetHabits} week={week} doneCount={doneCount} dueCount={dueCount} justCompleted={justCompleted} empty={!habits?.length} />
-        <div className="hidden lg:block">
-          <MoodPicker />
-        </div>
       </aside>
 
       <div className="min-w-0 space-y-8">
@@ -185,9 +182,6 @@ export default function TodayPage() {
           </section>
         )}
 
-        <div className="grid gap-6 lg:hidden">
-          <MoodPicker />
-        </div>
         <TodayTasks />
       </div>
 

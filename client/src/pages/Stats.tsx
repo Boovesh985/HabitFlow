@@ -5,7 +5,6 @@ import { useOverview } from "../lib/hooks";
 import { parseDay, WEEKDAYS_SHORT } from "../lib/dates";
 import { Heatmap } from "../components/Heatmap";
 import { HabitIcon } from "../components/HabitIcon";
-import { Face, MOODS } from "../components/Mood";
 import { CharacterSheet } from "../components/Character";
 import { Bar, Highlight, Loading, PageTitle, SectionHead } from "../components/ui";
 
@@ -20,7 +19,6 @@ function N({ children, tone }: { children: React.ReactNode; tone?: "red" | "pen"
 }
 
 /** Rough → Great runs red → green, so the table reads at a glance. */
-const MOOD_INK = ["oklch(0.6 0.19 28)", "oklch(0.7 0.16 55)", "oklch(0.75 0.13 95)", "oklch(0.66 0.14 140)", "oklch(0.58 0.14 160)"];
 const CAT_INK = ["oklch(0.55 0.18 260)", "oklch(0.68 0.19 35)", "oklch(0.82 0.15 85)", "oklch(0.6 0.14 160)", "oklch(0.55 0.17 310)", "oklch(0.55 0.03 260)"];
 
 export default function StatsPage() {
@@ -33,27 +31,8 @@ export default function StatsPage() {
   const best = ranked[0];
   const worst = ranked.length > 1 ? ranked[ranked.length - 1] : undefined;
   const top = data.leaderboard.find((l) => l.kind === "BUILD" && l.currentStreak > 0);
-  const moodRows = data.moodCorrelation.filter((m) => m.days > 0);
   const focusTotal = data.focusByDay.reduce((a, f) => a + f.minutes, 0);
   const maxFocus = Math.max(1, ...data.focusByDay.map((f) => f.minutes));
-
-  const moodLine = (() => {
-    const avg = (xs: typeof moodRows) =>
-      xs.reduce((a, m) => a + m.avgCompletion * m.days, 0) /
-      Math.max(
-        1,
-        xs.reduce((a, m) => a + m.days, 0)
-      );
-    const hi = moodRows.filter((m) => m.mood >= 4);
-    const lo = moodRows.filter((m) => m.mood <= 2);
-    if (moodRows.reduce((a, m) => a + m.days, 0) < 5) return "Log your mood on a few more days and a pattern will show up here.";
-    if (hi.length && lo.length) {
-      const diff = avg(hi) - avg(lo);
-      if (diff > 0.08) return `On good days you get through ${pct(diff)} more of your habits than on low days.`;
-      if (diff < -0.08) return "You keep your habits going even on low days. That's the hard part.";
-    }
-    return "So far your mood and your habits move fairly independently.";
-  })();
 
   return (
     <div className="space-y-10">
@@ -149,26 +128,6 @@ export default function StatsPage() {
                 );
               })}
             </div>
-          </div>
-        </section>
-
-        <section>
-          <SectionHead>Mood and habits</SectionHead>
-          <div className="sheet px-5 py-4">
-            <p className="mb-3 text-[15px] text-ink-2">{moodLine}</p>
-            <ul className="space-y-2">
-              {[...MOODS].reverse().map((m) => {
-                const row = data.moodCorrelation[m.v - 1];
-                return (
-                  <li key={m.v} className="grid grid-cols-[34px_56px_1fr_84px] items-center gap-3">
-                    <Face mood={m.v} size={28} />
-                    <span className="text-[14px] font-semibold">{m.label}</span>
-                    <Bar value={row.avgCompletion} color={row.days ? MOOD_INK[m.v - 1] : "var(--well)"} />
-                    <span className="text-right text-[13px] text-ink-2">{row.days ? `${pct(row.avgCompletion)} · ${row.days}d` : "no days"}</span>
-                  </li>
-                );
-              })}
-            </ul>
           </div>
         </section>
 

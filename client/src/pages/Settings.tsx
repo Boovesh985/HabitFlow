@@ -2,7 +2,6 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { INKS, useAuth, useUI, type ThemeMode } from "../lib/store";
-import { deviceTimezone } from "../lib/dates";
 import {
   disableWebPush,
   enableNotifications,
@@ -173,12 +172,8 @@ export default function SettingsPage() {
             </button>
           </form>
         </Row>
-        <Row label="Time zone" hint={`Reminders fire at your local time in ${user?.timezone}.`}>
-          {user?.timezone !== deviceTimezone() && (
-            <button className="btn-line" onClick={() => patch({ timezone: deviceTimezone() }, "Time zone updated")}>
-              Use {deviceTimezone()}
-            </button>
-          )}
+        <Row label="Time zone" hint="Days, streaks and reminders all run on India Standard Time.">
+          <span className="text-[15px] font-semibold">IST (UTC+5:30)</span>
         </Row>
       </Group>
 

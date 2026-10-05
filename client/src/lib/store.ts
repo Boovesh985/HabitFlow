@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { api, tokens } from "./api";
-import { deviceTimezone, localDay } from "./dates";
+import { APP_TIMEZONE, localDay } from "./dates";
 import type { Achievement, User } from "./types";
 import { DEFAULT_DESK, DESKS } from "./desks";
 
@@ -30,8 +30,8 @@ export const useAuth = create<AuthState>((set) => ({
     try {
       const { user } = await api<{ user: User }>("/auth/me");
       set({ user, status: "authed" });
-      // Keep the server's timezone in sync with the device so reminders fire at the right local time.
-      const tz = deviceTimezone();
+      // The app runs on India Standard Time; pin the account to it so reminders and streak days use IST.
+      const tz = APP_TIMEZONE;
       if (user.timezone !== tz) {
         api<{ user: User }>("/users/me", {
           method: "PATCH",
@@ -63,7 +63,7 @@ export const useAuth = create<AuthState>((set) => ({
   async register(name, email, password) {
     const r = await api<AuthResponse>("/auth/register", {
       method: "POST",
-      body: { name, email, password, timezone: deviceTimezone() },
+      body: { name, email, password, timezone: APP_TIMEZONE },
       auth: false,
     });
     tokens.set({ accessToken: r.accessToken, refreshToken: r.refreshToken });
