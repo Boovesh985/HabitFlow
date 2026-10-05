@@ -5,6 +5,7 @@ import { NavLink, useLocation, useNavigate, useOutlet } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { create } from "zustand";
 import clsx from "clsx";
+import { APP_TIMEZONE } from "../lib/dates";
 import { useAuth } from "../lib/store";
 import { useProfile } from "../lib/hooks";
 import type { Habit } from "../lib/types";
@@ -35,7 +36,7 @@ const NAV = [
 ];
 
 /** Wordmark: a small date-stamp mark and the name set in the calendar face. */
-export function Wordmark({ compact }: { compact?: boolean }) {
+export function Wordmark({ compact, nameFromSm }: { compact?: boolean; nameFromSm?: boolean }) {
   return (
     <span className="flex items-center gap-2">
       <svg width="26" height="26" viewBox="0 0 48 48" aria-hidden>
@@ -45,7 +46,7 @@ export function Wordmark({ compact }: { compact?: boolean }) {
           <path d="M13.5 22.5l5.5 5.5L31 16" fill="none" stroke="var(--sheet)" strokeWidth="4.6" strokeLinecap="round" strokeLinejoin="round" />
         </g>
       </svg>
-      {!compact && <span className="numeral text-[26px] font-extrabold tracking-[0.01em]">HabitFlow</span>}
+      {!compact && <span className={clsx("numeral text-[26px] font-extrabold tracking-[0.01em]", nameFromSm && "hidden sm:inline")}>HabitFlow</span>}
     </span>
   );
 }
@@ -70,7 +71,7 @@ function AccountMenu() {
       >
         <Monogram name={user?.name ?? ""} />
         {p && (
-          <span className="text-sm font-semibold">
+          <span className="text-sm font-semibold whitespace-nowrap">
             Lv <span className="numeral text-[17px]">{p.level}</span>
           </span>
         )}
@@ -134,7 +135,7 @@ export function Layout() {
       <header className="sticky top-0 z-30 border-b border-[color-mix(in_oklch,var(--ink)_12%,transparent)] bg-ground/88 backdrop-blur-[8px] safe-top">
         <div className="mx-auto flex h-[60px] max-w-[1180px] items-center gap-6 px-4 sm:px-6">
           <NavLink to="/" aria-label="HabitFlow, today">
-            <Wordmark />
+            <Wordmark nameFromSm />
           </NavLink>
           <nav className="hidden h-full items-stretch gap-1 lg:flex" aria-label="Main">
             {NAV.map((n) => (
@@ -165,9 +166,10 @@ export function Layout() {
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-2.5">
+            <LiveClock />
             <button onClick={() => form.show()} className="btn-pen !px-3 sm:!px-4" aria-label="New habit">
               <Plus size={18} strokeWidth={2.5} />
-              <span className="hidden sm:inline">New habit</span>
+              <span className="hidden whitespace-nowrap sm:inline lg:hidden xl:inline">New habit</span>
             </button>
             <AccountMenu />
           </div>
@@ -226,5 +228,27 @@ export function Layout() {
       <HabitForm open={form.open} habit={form.habit} onClose={form.close} />
       <ProjectForm open={pform.open} project={pform.project} kind={pform.kind} onClose={pform.close} />
     </div>
+  );
+}
+
+const clockFormat = new Intl.DateTimeFormat("en-IN", { timeZone: APP_TIMEZONE, hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
+
+/** Live India Standard Time clock for the top bar. */
+function LiveClock() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    let timer: number;
+    const tick = () => {
+      setNow(new Date());
+      timer = window.setTimeout(tick, 1000 - (Date.now() % 1000));
+    };
+    timer = window.setTimeout(tick, 1000 - (Date.now() % 1000));
+    return () => window.clearTimeout(timer);
+  }, []);
+  return (
+    <time dateTime={now.toISOString()} className="numeral flex items-baseline gap-1 text-[14px] font-semibold whitespace-nowrap tabular-nums text-ink sm:text-[17px]" aria-label="Current time in India">
+      {clockFormat.format(now).toUpperCase()}
+      <span className="text-[11px] font-bold tracking-wide text-ink-3">IST</span>
+    </time>
   );
 }

@@ -15,10 +15,9 @@ statsRouter.get("/overview", async (req, res) => {
   const days = Math.min(Number(req.query.days ?? 365) || 365, 730);
   const from = addDays(today, -(days - 1));
 
-  const [user, habits, moods, profile, focus] = await Promise.all([
+  const [user, habits, profile, focus] = await Promise.all([
     prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { timezone: true } }),
     prisma.habit.findMany({ where: { userId, archivedAt: null }, include: { checkIns: true } }),
-    prisma.moodEntry.findMany({ where: { userId, date: { gte: new Date(`${from}T00:00:00Z`) } } }),
     profileStats(userId),
     prisma.focusSession.findMany({
       where: { userId, startedAt: { gte: new Date(`${addDays(today, -7)}T00:00:00Z`) } },
@@ -49,17 +48,6 @@ statsRouter.get("/overview", async (req, res) => {
       weekdayAgg[weekday(d)].done += done;
       weekdayAgg[weekday(d)].due += due;
     }
-  }
-
-  // Mood vs. completion: average completion ratio of days grouped by logged mood.
-  const ratioByDay = new Map(heatmap.map((h) => [h.date, h.due ? h.done / h.due : null]));
-  const moodAgg = Array.from({ length: 5 }, (_, i) => ({ mood: i + 1, days: 0, avgCompletion: 0 }));
-  for (const m of moods) {
-    const r = ratioByDay.get(toDay(m.date));
-    if (r === null || r === undefined) continue;
-    const a = moodAgg[m.mood - 1];
-    a.avgCompletion = (a.avgCompletion * a.days + r) / (a.days + 1);
-    a.days++;
   }
 
   // Character stats: every completion ever, including archived habits, so levels never go backwards.
@@ -102,7 +90,6 @@ statsRouter.get("/overview", async (req, res) => {
     profile,
     heatmap,
     weekdays: weekdayAgg.map((w, i) => ({ weekday: i, rate: w.due ? w.done / w.due : 0 })),
-    moodCorrelation: moodAgg,
     categories: [...categories.entries()].map(([name, v]) => ({ name, ...v })),
     completion: {
       last7: t7.due ? t7.done / t7.due : 0,
