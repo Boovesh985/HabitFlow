@@ -22,13 +22,19 @@ interface AuthResponse {
   refreshToken: string;
 }
 
-export const useAuth = create<AuthState>((set) => ({
+/** Retry timer for loading the profile when the server couldn't be reached at start-up. */
+let profileRetry: ReturnType<typeof setTimeout> | undefined;
+let profileRetryDelay = 3000;
+
+export const useAuth = create<AuthState>((set, get) => ({
   user: null,
   status: "loading",
   async bootstrap() {
+    clearTimeout(profileRetry);
     if (!tokens.get()) return set({ status: "guest" });
     try {
       const { user } = await api<{ user: User }>("/auth/me");
+      profileRetryDelay = 3000;
       set({ user, status: "authed" });
       // The app runs on India Standard Time; pin the account to it so reminders and streak days use IST.
       const tz = APP_TIMEZONE;
@@ -48,7 +54,14 @@ export const useAuth = create<AuthState>((set) => ({
         tokens.set(null);
         return set({ user: null, status: "guest" });
       }
-      set({ status: tokens.get() ? "authed" : "guest" });
+      if (!tokens.get()) return set({ status: "guest" });
+      set({ status: "authed" });
+      // The server may be waking up or the phone offline: keep trying until the profile loads,
+      // otherwise the name and avatar stay blank for the whole session.
+      profileRetry = setTimeout(() => {
+        if (!get().user) get().bootstrap();
+      }, profileRetryDelay);
+      profileRetryDelay = Math.min(profileRetryDelay * 2, 60_000);
     }
   },
   async login(email, password) {
@@ -58,6 +71,7 @@ export const useAuth = create<AuthState>((set) => ({
       auth: false,
     });
     tokens.set({ accessToken: r.accessToken, refreshToken: r.refreshToken });
+    clearTimeout(profileRetry);
     set({ user: r.user, status: "authed" });
   },
   async register(name, email, password) {
@@ -78,6 +92,7 @@ export const useAuth = create<AuthState>((set) => ({
         auth: false,
       }).catch(() => {});
     tokens.set(null);
+    clearTimeout(profileRetry);
     set({ user: null, status: "guest" });
   },
   setUser: (user) => set({ user }),

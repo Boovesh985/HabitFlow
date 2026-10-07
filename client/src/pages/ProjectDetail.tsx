@@ -30,7 +30,7 @@ export default function ProjectDetailPage() {
   const { data, isLoading } = useProjects();
   const p = data?.find((x) => x.id === id);
   const m = useProjectMutations();
-  const form = useProjectForm();
+  const showForm = useProjectForm((s) => s.show);
   const [menu, setMenu] = useState(false);
   const [justDone, setJustDone] = useState(false);
   const menuBtn = useRef<HTMLButtonElement>(null);
@@ -73,7 +73,7 @@ export default function ProjectDetailPage() {
           {p.description && <p className="mt-2 max-w-[62ch] text-[15px] whitespace-pre-line text-ink-2">{p.description}</p>}
         </div>
         <div className="flex items-center gap-2">
-          <button className="btn-line" onClick={() => form.show(p)}>
+          <button className="btn-line" onClick={() => showForm(p)}>
             <Pencil size={16} /> Edit
           </button>
           <button ref={menuBtn} className="btn-quiet !px-2" onClick={() => setMenu((x) => !x)} aria-label="More" aria-haspopup="menu" aria-expanded={menu}>
@@ -131,7 +131,7 @@ export default function ProjectDetailPage() {
                 <span className="mono text-ink-3">{new Date(p.deadline).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span>
               </>
             ) : (
-              <button className="text-[15px] font-semibold text-pen hover:underline" onClick={() => form.show(p)}>
+              <button className="text-[15px] font-semibold text-pen hover:underline" onClick={() => showForm(p)}>
                 Set one
               </button>
             )}

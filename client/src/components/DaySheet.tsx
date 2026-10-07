@@ -18,6 +18,7 @@ export function DaySheet({
   dueCount,
   justCompleted,
   empty = false,
+  weeklyOpen = 0,
 }: {
   day: string;
   habits: Habit[];
@@ -26,6 +27,8 @@ export function DaySheet({
   dueCount: number;
   justCompleted: boolean;
   empty?: boolean;
+  /** "N times a week" habits still open today; they only count toward the page once done. */
+  weeklyOpen?: number;
 }) {
   const d = parseDay(day);
   const sunday = d.getDay() === 0;
@@ -36,6 +39,8 @@ export function DaySheet({
   const line =
     empty
       ? "No habits yet. Add one to fill this page."
+      : dueCount === 0 && weeklyOpen > 0
+      ? `${weeklyOpen} weekly habit${weeklyOpen === 1 ? "" : "s"} to fit in this week.`
       : dueCount === 0
       ? "Rest day. Recovery is part of the arc."
       : perfect

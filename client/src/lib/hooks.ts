@@ -89,7 +89,7 @@ export function useCheckIn() {
           if (h.id !== v.habitId) return h;
           let count = h.stats.todayCount;
           if (v.remove) count = 0;
-          else if (v.delta !== undefined) count = Math.max(0, count + v.delta);
+          else if (v.delta !== undefined) count = Math.max(0, v.delta > 0 ? Math.min(Math.max(count, h.targetCount), count + v.delta) : count + v.delta);
           else if (v.count !== undefined) count = v.count;
           else if (v.status === "DONE" || !v.status) count = h.targetCount;
           const doneToday = !v.remove && (v.status ?? "DONE") === "DONE" && count >= h.targetCount;

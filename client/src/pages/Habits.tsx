@@ -16,7 +16,7 @@ export default function HabitsPage() {
   const [cat, setCat] = useState("All");
   const { data: habits, isLoading } = useHabits(view === "archived");
   const reorder = useReorder();
-  const form = useHabitForm();
+  const showForm = useHabitForm((s) => s.show);
   const [order, setOrder] = useState<Habit[]>([]);
 
   useEffect(() => setOrder(habits ?? []), [habits]);
@@ -56,7 +56,7 @@ export default function HabitsPage() {
           body={view === "archived" ? "When you pause a habit, it rests here with its history intact." : "Add the first one. You can change everything about it later."}
           action={
             view === "active" && (
-              <button className="btn-pen" onClick={() => form.show()}>
+              <button className="btn-pen" onClick={() => showForm()}>
                 <Plus size={18} /> New habit
               </button>
             )
@@ -84,7 +84,7 @@ export default function HabitsPage() {
 function Row({ habit: h, draggable, onDrop }: { habit: Habit; draggable: boolean; onDrop: () => void }) {
   const controls = useDragControls();
   const action = useHabitAction();
-  const form = useHabitForm();
+  const showForm = useHabitForm((s) => s.show);
   const toast = useUI((s) => s.toast);
   const [confirm, setConfirm] = useState(false);
   const unit = h.stats.streakUnit === "weeks" ? "w" : "d";
@@ -133,7 +133,7 @@ function Row({ habit: h, draggable, onDrop }: { habit: Habit; draggable: boolean
 
         <div className="col-start-3 row-start-1 flex justify-end gap-0.5 md:col-start-auto md:row-start-auto">
           {!h.archived && (
-            <button className="btn-quiet !p-2" onClick={() => form.show(h)} aria-label={`Edit ${h.name}`} title="Edit">
+            <button className="btn-quiet !p-2" onClick={() => showForm(h)} aria-label={`Edit ${h.name}`} title="Edit">
               <Pencil size={16} />
             </button>
           )}

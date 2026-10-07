@@ -8,7 +8,7 @@ import { Empty, Loading, PageTitle, SectionHead, Segmented } from "../components
 
 export default function ProjectsPage() {
   const { data, isLoading } = useProjects();
-  const form = useProjectForm();
+  const showForm = useProjectForm((s) => s.show);
   const [show, setShow] = useState<"active" | "done">("active");
 
   const { active, done, soon } = useMemo(() => {
@@ -31,10 +31,10 @@ export default function ProjectsPage() {
         sub="Things with a finish line: work you've been given and courses you're taking. Each gets a checklist, a deadline countdown and reminders."
         aside={
           <div className="flex gap-2">
-            <button className="btn-line" onClick={() => form.show(null, "COURSE")}>
+            <button className="btn-line" onClick={() => showForm(null, "COURSE")}>
               <GraduationCap size={17} /> New course
             </button>
-            <button className="btn-pen" onClick={() => form.show(null, "PROJECT")}>
+            <button className="btn-pen" onClick={() => showForm(null, "PROJECT")}>
               <Plus size={18} strokeWidth={2.5} /> New project
             </button>
           </div>
@@ -51,10 +51,10 @@ export default function ProjectsPage() {
           body="Add the project you've been handed, or the course you keep meaning to finish. Break it into steps, set a deadline, and HabitFlow will count down with you."
           action={
             <div className="flex flex-wrap gap-2">
-              <button className="btn-pen" onClick={() => form.show(null, "PROJECT")}>
+              <button className="btn-pen" onClick={() => showForm(null, "PROJECT")}>
                 <Plus size={18} /> Add a project
               </button>
-              <button className="btn-line" onClick={() => form.show(null, "COURSE")}>
+              <button className="btn-line" onClick={() => showForm(null, "COURSE")}>
                 <GraduationCap size={17} /> Add a course
               </button>
             </div>

@@ -182,7 +182,8 @@ habitsRouter.put("/:id/checkins/:date", async (req, res) => {
   let count = body.count ?? (body.status === "DONE" ? habit.targetCount : 0);
   if (body.delta !== undefined) {
     const base = existing?.status === "DONE" ? existing.count : 0;
-    count = Math.max(0, base + body.delta);
+    // Tapping +1 stops at the goal, so one tap of -1 always takes the last one back.
+    count = Math.max(0, body.delta > 0 ? Math.min(Math.max(base, habit.targetCount), base + body.delta) : base + body.delta);
   }
 
   // Zero of a DONE habit means "nothing logged"; keep the row only if it still carries a note.

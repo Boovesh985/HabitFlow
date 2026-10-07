@@ -142,7 +142,7 @@ adb install -r client/android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
 **Server address:** the app has no in-app server setting. The address is baked in at build time:
-create `client/.env` with `VITE_API_URL=https://your-server` before `npm run android:apk`.
+create `client/.env.production` with `VITE_API_URL=https://your-server` before `npm run android:apk` (production builds only, so `npm run dev` keeps using the local API).
 - Deployed on Render: `https://<your-app>.onrender.com`
 - Testing on the same Wi-Fi: `http://<your-PC-IP>:8080` (Docker) or `:4000` (dev)
 

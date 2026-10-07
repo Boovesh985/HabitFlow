@@ -17,7 +17,7 @@ import { Loading, NumberInput, SectionHead, Sheet } from "../components/ui";
 export default function HabitDetailPage() {
   const { id } = useParams();
   const { data: h, isLoading } = useHabit(id);
-  const form = useHabitForm();
+  const showForm = useHabitForm((s) => s.show);
   const today = useUI((s) => s.today);
   const [editDay, setEditDay] = useState<string | null>(null);
   const byDay = useMemo(() => new Map((h?.history ?? []).map((c) => [c.date, c])), [h]);
@@ -74,7 +74,7 @@ export default function HabitDetailPage() {
             </div>
           )}
         </div>
-        <button className="btn-line" onClick={() => form.show(h)}>
+        <button className="btn-line" onClick={() => showForm(h)}>
           <Pencil size={16} /> Edit
         </button>
       </header>

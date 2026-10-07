@@ -8,6 +8,20 @@ import { StampMark } from "./Stamp";
 
 const EXPO = [0.16, 1, 0.3, 1] as const;
 
+const PHONE = "(max-width: 639px)";
+
+/** True below the `sm` breakpoint, where sheets dock to the bottom of the screen. */
+function useIsPhone() {
+  const [phone, setPhone] = useState(() => typeof window !== "undefined" && matchMedia(PHONE).matches);
+  useEffect(() => {
+    const mq = matchMedia(PHONE);
+    const on = () => setPhone(mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  return phone;
+}
+
 /** Bottom sheet on phones, centered dialog on larger screens. */
 export function Sheet({
   open,
@@ -22,6 +36,7 @@ export function Sheet({
   children: ReactNode;
   wide?: boolean;
 }) {
+  const phone = useIsPhone();
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -43,7 +58,7 @@ export function Sheet({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.18 }}
             onClick={onClose}
           />
           <motion.div
@@ -53,10 +68,11 @@ export function Sheet({
               "relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[18px] border border-rule bg-sheet shadow-[0_-10px_40px_-20px_oklch(0.2_0.05_266/0.5)] sm:rounded-[16px]",
               wide ? "sm:max-w-[640px]" : "sm:max-w-[460px]"
             )}
-            initial={{ y: 40, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 24, opacity: 0 }}
-            transition={{ duration: 0.32, ease: EXPO }}
+            // Phones: an opaque sheet slides up from the bottom edge, so the page never shows through it.
+            initial={phone ? { y: "100%" } : { y: 16, opacity: 0, scale: 0.98 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={phone ? { y: "100%", transition: { duration: 0.22, ease: [0.4, 0, 1, 1] } } : { y: 12, opacity: 0, scale: 0.98, transition: { duration: 0.16 } }}
+            transition={{ duration: 0.34, ease: EXPO }}
           >
             <div className="flex items-center justify-between gap-3 border-b border-rule px-5 py-3.5">
               <h2 className="numeral text-[26px] font-bold">{title}</h2>
