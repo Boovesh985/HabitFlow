@@ -1,13 +1,13 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell, Check, Plus, Trash2 } from "lucide-react";
-import { useMemo, useState, type FormEvent } from "react";
+import { Bell, Check, Plus, StickyNote, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import clsx from "clsx";
 import { useTaskMutations, useTasks } from "../lib/hooks";
 import { useUI } from "../lib/store";
 import { addDays, parseDay } from "../lib/dates";
 import { stamped, tap } from "../lib/celebrate";
 import type { Task } from "../lib/types";
-import { Empty, Loading, PageTitle, SectionHead } from "../components/ui";
+import { Empty, Loading, PageTitle, SectionHead, Sheet } from "../components/ui";
 
 const PRIORITY = [
   { v: 0, label: "Low" },
@@ -27,9 +27,105 @@ const REMIND = [
 const toLocalInput = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 const when = (iso: string) => new Date(iso).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
+/** Due time, reminder and priority as edited in a form (datetime-local strings and a reminder choice). */
+interface Timing {
+  due: string;
+  remind: string;
+  customRemind: string;
+  priority: number;
+}
+
+const BLANK_TIMING: Timing = { due: "", remind: "none", customRemind: "", priority: 1 };
+
+/** Read a saved task back into form values, recognising the preset reminder offsets. */
+function timingOf(t: Task): Timing {
+  const due = t.dueAt ? toLocalInput(new Date(t.dueAt)) : "";
+  let remind = "none";
+  let customRemind = "";
+  if (t.remindAt) {
+    const before = t.dueAt ? (new Date(t.dueAt).getTime() - new Date(t.remindAt).getTime()) / 60000 : NaN;
+    const preset = REMIND.find((r) => r.v !== "none" && r.v !== "custom" && Number(r.v) === before);
+    if (preset) remind = preset.v;
+    else {
+      remind = "custom";
+      customRemind = toLocalInput(new Date(t.remindAt));
+    }
+  }
+  return { due, remind, customRemind, priority: t.priority };
+}
+
+/** Turn form values into the API's dueAt / remindAt, or a message explaining what's missing. */
+function resolveTiming(f: Timing): { dueAt: string | null; remindAt: string | null } | { error: string } {
+  const dueAt = f.due ? new Date(f.due) : null;
+  let remindAt: Date | null = null;
+  if (f.remind === "custom") {
+    if (!f.customRemind) return { error: "Pick a reminder time, or choose No reminder." };
+    remindAt = new Date(f.customRemind);
+  } else if (f.remind !== "none") {
+    if (!dueAt) return { error: "Set a due time first. That reminder is relative to the due time." };
+    remindAt = new Date(dueAt.getTime() - Number(f.remind) * 60000);
+  }
+  return { dueAt: dueAt?.toISOString() ?? null, remindAt: remindAt?.toISOString() ?? null };
+}
+
+/** Due, reminder and priority fields, shared by the add box and the edit sheet. */
+function TimingFields({ value: f, onChange, idPrefix }: { value: Timing; onChange: (f: Timing) => void; idPrefix: string }) {
+  const set = (patch: Partial<Timing>) => onChange({ ...f, ...patch });
+  const quick = (fn: () => Date) => set({ due: toLocalInput(fn()) });
+  return (
+    <>
+      <div>
+        <label className="field-label" htmlFor={`${idPrefix}-due`}>
+          Due
+        </label>
+        <input id={`${idPrefix}-due`} type="datetime-local" className="field" value={f.due} onChange={(e) => set({ due: e.target.value })} />
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          <button type="button" className="pill !px-2.5 !py-1 !text-[13px]" onClick={() => quick(() => { const d = new Date(); d.setHours(18, 0, 0, 0); return d; })}>
+            Today 6 pm
+          </button>
+          <button type="button" className="pill !px-2.5 !py-1 !text-[13px]" onClick={() => quick(() => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); return d; })}>
+            Tomorrow 9 am
+          </button>
+          {f.due && (
+            <button type="button" className="pill !px-2.5 !py-1 !text-[13px]" onClick={() => set({ due: "", remind: f.remind === "custom" ? "custom" : "none" })}>
+              No date
+            </button>
+          )}
+        </div>
+      </div>
+      <div>
+        <label className="field-label" htmlFor={`${idPrefix}-remind`}>
+          Reminder
+        </label>
+        <select id={`${idPrefix}-remind`} className="field" value={f.remind} onChange={(e) => set({ remind: e.target.value })}>
+          {REMIND.map((r) => (
+            <option key={r.v} value={r.v}>
+              {r.label}
+            </option>
+          ))}
+        </select>
+        {f.remind === "custom" && (
+          <input type="datetime-local" className="field mt-2" value={f.customRemind} onChange={(e) => set({ customRemind: e.target.value })} aria-label="Reminder time" />
+        )}
+      </div>
+      <div>
+        <span className="field-label">Priority</span>
+        <div className="flex gap-1.5">
+          {PRIORITY.map((p) => (
+            <button type="button" key={p.v} className="pill flex-1 justify-center" aria-pressed={f.priority === p.v} onClick={() => set({ priority: p.v })}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function TasksPage() {
   const { data: tasks, isLoading } = useTasks();
   const today = useUI((s) => s.today);
+  const [editing, setEditing] = useState<Task | null>(null);
 
   const groups = useMemo(() => {
     const start = parseDay(today).getTime();
@@ -60,13 +156,14 @@ export default function TasksPage() {
         </div>
       ) : (
         <div className="mt-8 space-y-8">
-          <Group title="Overdue" tasks={groups.overdue} tone="red" />
-          <Group title="Today" tasks={groups.today} />
-          <Group title="Coming up" tasks={groups.later} />
-          <Group title="No date" tasks={groups.someday} />
-          <Group title="Done this week" tasks={groups.done} />
+          <Group title="Overdue" tasks={groups.overdue} tone="red" onEdit={setEditing} />
+          <Group title="Today" tasks={groups.today} onEdit={setEditing} />
+          <Group title="Coming up" tasks={groups.later} onEdit={setEditing} />
+          <Group title="No date" tasks={groups.someday} onEdit={setEditing} />
+          <Group title="Done this week" tasks={groups.done} onEdit={setEditing} />
         </div>
       )}
+      <TaskEditor task={editing} onClose={() => setEditing(null)} />
     </div>
   );
 }
@@ -76,36 +173,23 @@ function Composer() {
   const toast = useUI((s) => s.toast);
   const [title, setTitle] = useState("");
   const [open, setOpen] = useState(false);
-  const [due, setDue] = useState("");
-  const [remind, setRemind] = useState("none");
-  const [customRemind, setCustomRemind] = useState("");
-  const [priority, setPriority] = useState(1);
+  const [timing, setTiming] = useState<Timing>(BLANK_TIMING);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-    const dueAt = due ? new Date(due) : null;
-    let remindAt: Date | null = null;
-    if (remind === "custom" && customRemind) remindAt = new Date(customRemind);
-    else if (remind !== "none" && remind !== "custom") {
-      if (!dueAt) return toast({ kind: "error", title: "Set a due time first", body: "That reminder is relative to the due time." });
-      remindAt = new Date(dueAt.getTime() - Number(remind) * 60000);
-    }
+    const t = resolveTiming(timing);
+    if ("error" in t) return toast({ kind: "error", title: "Check the reminder", body: t.error });
     try {
-      await create.mutateAsync({ title: title.trim(), priority, dueAt: dueAt?.toISOString() ?? null, remindAt: remindAt?.toISOString() ?? null });
+      await create.mutateAsync({ title: title.trim(), priority: timing.priority, ...t });
       setTitle("");
-      setDue("");
-      setRemind("none");
-      setCustomRemind("");
-      setPriority(1);
+      setTiming(BLANK_TIMING);
       setOpen(false);
-      toast({ title: "Task added", body: remindAt ? `Reminder at ${when(remindAt.toISOString())}` : undefined });
+      toast({ title: "Task added", body: t.remindAt ? `Reminder at ${when(t.remindAt)}` : undefined });
     } catch (err) {
       toast({ kind: "error", title: "Couldn't add the task", body: (err as Error).message });
     }
   };
-
-  const quick = (fn: () => Date) => setDue(toLocalInput(fn()));
 
   return (
     <form onSubmit={submit} className="sheet overflow-hidden">
@@ -134,39 +218,7 @@ function Composer() {
             className="overflow-hidden"
           >
             <div className="grid gap-4 border-t border-rule bg-well/50 px-4 py-4 sm:grid-cols-3">
-              <div>
-                <label className="field-label" htmlFor="due">Due</label>
-                <input id="due" type="datetime-local" className="field" value={due} onChange={(e) => setDue(e.target.value)} />
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  <button type="button" className="pill !px-2.5 !py-1 !text-[13px]" onClick={() => quick(() => { const d = new Date(); d.setHours(18, 0, 0, 0); return d; })}>
-                    Today 6 pm
-                  </button>
-                  <button type="button" className="pill !px-2.5 !py-1 !text-[13px]" onClick={() => quick(() => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); return d; })}>
-                    Tomorrow 9 am
-                  </button>
-                </div>
-              </div>
-              <div>
-                <label className="field-label" htmlFor="remind">Reminder</label>
-                <select id="remind" className="field" value={remind} onChange={(e) => setRemind(e.target.value)}>
-                  {REMIND.map((r) => (
-                    <option key={r.v} value={r.v}>
-                      {r.label}
-                    </option>
-                  ))}
-                </select>
-                {remind === "custom" && <input type="datetime-local" className="field mt-2" value={customRemind} onChange={(e) => setCustomRemind(e.target.value)} aria-label="Reminder time" />}
-              </div>
-              <div>
-                <span className="field-label">Priority</span>
-                <div className="flex gap-1.5">
-                  {PRIORITY.map((p) => (
-                    <button type="button" key={p.v} className="pill flex-1 justify-center" aria-pressed={priority === p.v} onClick={() => setPriority(p.v)}>
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <TimingFields value={timing} onChange={setTiming} idPrefix="new" />
             </div>
           </motion.div>
         )}
@@ -175,7 +227,7 @@ function Composer() {
   );
 }
 
-function Group({ title, tasks, tone }: { title: string; tasks: Task[]; tone?: "red" }) {
+function Group({ title, tasks, tone, onEdit }: { title: string; tasks: Task[]; tone?: "red"; onEdit: (t: Task) => void }) {
   if (!tasks.length) return null;
   return (
     <section>
@@ -185,7 +237,7 @@ function Group({ title, tasks, tone }: { title: string; tasks: Task[]; tone?: "r
       <ul className="sheet overflow-hidden">
         <AnimatePresence initial={false}>
           {tasks.map((t) => (
-            <Row key={t.id} task={t} />
+            <Row key={t.id} task={t} onEdit={onEdit} />
           ))}
         </AnimatePresence>
       </ul>
@@ -193,7 +245,7 @@ function Group({ title, tasks, tone }: { title: string; tasks: Task[]; tone?: "r
   );
 }
 
-function Row({ task: t }: { task: Task }) {
+function Row({ task: t, onEdit }: { task: Task; onEdit: (t: Task) => void }) {
   const { update, remove } = useTaskMutations();
   const done = !!t.completedAt;
   return (
@@ -214,25 +266,114 @@ function Row({ task: t }: { task: Task }) {
       >
         {done && <Check size={14} className="text-sheet" strokeWidth={3} />}
       </button>
-      <div className="min-w-0 flex-1">
+      <button type="button" onClick={() => onEdit(t)} className="min-w-0 flex-1 text-left" aria-label={`Edit ${t.title}`}>
         <div className={clsx("truncate text-[15.5px]", done && "text-ink-3 line-through decoration-ink-3")}>
           {t.priority === 2 && !done && <span className="mr-1.5 font-bold text-red">!</span>}
           {t.title}
         </div>
-        {(t.dueAt || (t.remindAt && !done)) && (
-          <div className="mt-0.5 flex flex-wrap gap-x-3 text-[13px] text-ink-2">
+        {(t.dueAt || (t.remindAt && !done) || t.notes) && (
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-3 text-[13px] text-ink-2">
             {t.dueAt && <span className="mono">{when(t.dueAt)}</span>}
             {t.remindAt && !done && (
               <span className="flex items-center gap-1">
                 <Bell size={12} /> <span className="mono">{when(t.remindAt)}</span>
               </span>
             )}
+            {t.notes && <StickyNote size={12} className="text-ink-3" aria-label="Has notes" />}
           </div>
         )}
-      </div>
+      </button>
       <button onClick={() => remove.mutate(t.id)} className="btn-quiet !p-2 opacity-60 group-hover:opacity-100 hover:!text-red" aria-label={`Delete ${t.title}`}>
         <Trash2 size={16} />
       </button>
     </motion.li>
+  );
+}
+
+function TaskEditor({ task, onClose }: { task: Task | null; onClose: () => void }) {
+  const { update, remove } = useTaskMutations();
+  const toast = useUI((s) => s.toast);
+  const [title, setTitle] = useState("");
+  const [notes, setNotes] = useState("");
+  const [timing, setTiming] = useState<Timing>(BLANK_TIMING);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  useEffect(() => {
+    if (!task) return;
+    setTitle(task.title);
+    setNotes(task.notes ?? "");
+    setTiming(timingOf(task));
+    setConfirmDelete(false);
+  }, [task]);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!task || !title.trim()) return;
+    const t = resolveTiming(timing);
+    if ("error" in t) return toast({ kind: "error", title: "Check the reminder", body: t.error });
+    const reminderChanged = t.remindAt !== task.remindAt;
+    try {
+      await update.mutateAsync({
+        id: task.id,
+        title: title.trim(),
+        notes: notes.trim() || null,
+        priority: timing.priority,
+        dueAt: t.dueAt,
+        // Only send the reminder when it changed, so an untouched reminder that already fired isn't re-armed.
+        ...(reminderChanged ? { remindAt: t.remindAt } : {}),
+      });
+      toast({ title: "Task saved", body: reminderChanged && t.remindAt ? `Reminder at ${when(t.remindAt)}` : undefined });
+      onClose();
+    } catch (err) {
+      toast({ kind: "error", title: "Couldn't save the task", body: (err as Error).message });
+    }
+  };
+
+  return (
+    <Sheet open={!!task} onClose={onClose} title="Edit task" wide>
+      <form onSubmit={submit} className="space-y-5">
+        <div>
+          <label className="field-label" htmlFor="edit-title">
+            Task
+          </label>
+          <input id="edit-title" className="field" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} />
+        </div>
+        <div>
+          <label className="field-label" htmlFor="edit-notes">
+            Notes <span className="font-normal text-ink-3">(optional, shown in the reminder)</span>
+          </label>
+          <textarea id="edit-notes" rows={3} className="field resize-none leading-relaxed" value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={2000} />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <TimingFields value={timing} onChange={setTiming} idPrefix="edit" />
+        </div>
+        <div className="flex items-center gap-2 pt-1">
+          {confirmDelete ? (
+            <>
+              <button
+                type="button"
+                className="btn-line !border-red !text-red"
+                onClick={() => {
+                  if (task) remove.mutate(task.id);
+                  onClose();
+                }}
+              >
+                <Trash2 size={16} /> Delete for good
+              </button>
+              <button type="button" className="btn-quiet" onClick={() => setConfirmDelete(false)}>
+                Keep it
+              </button>
+            </>
+          ) : (
+            <button type="button" className="btn-quiet hover:!text-red" onClick={() => setConfirmDelete(true)}>
+              <Trash2 size={16} /> Delete
+            </button>
+          )}
+          <button className="btn-ink ml-auto" disabled={!title.trim() || update.isPending}>
+            Save
+          </button>
+        </div>
+      </form>
+    </Sheet>
   );
 }
