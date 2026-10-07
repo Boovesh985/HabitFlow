@@ -107,6 +107,8 @@ export function HabitCard({
       return setConfirmSlip((v) => !v);
     }
     if (multi) {
+      // Already at the goal: ignore extra taps (quick repeat taps shouldn't undo). Use − to take one back.
+      if (done) return tap();
       checkIn.mutate({ habitId: h.id, delta: 1 });
       if (s.todayCount + 1 >= h.targetCount && !done) stamped(), setBurst((b) => b + 1);
       else tap();
@@ -199,7 +201,7 @@ export function HabitCard({
           <PastStrip h={h} today={today} />
         </div>
 
-        {multi && s.todayCount > 0 && !done && (
+        {multi && s.todayCount > 0 && (
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -227,7 +229,7 @@ export function HabitCard({
           <motion.button
             whileTap={{ scale: 0.9, y: 2 }}
             onClick={primary}
-            aria-label={done ? `Undo ${h.name}` : multi ? `Add one to ${h.name}` : `Mark ${h.name} done`}
+            aria-label={done ? (multi ? `${h.name}: goal reached` : `Undo ${h.name}`) : multi ? `Add one to ${h.name}` : `Mark ${h.name} done`}
             aria-pressed={done}
             className="relative grid h-[50px] w-[50px] shrink-0 place-items-center rounded-full"
           >

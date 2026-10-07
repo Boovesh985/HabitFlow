@@ -70,7 +70,8 @@ pushRouter.post("/action", async (req, res) => {
   if (p.date < addDays(today, -1)) throw new HttpError(400, "This reminder is from an earlier day");
   const date = toDate(p.date);
   const existing = await prisma.checkIn.findUnique({ where: { habitId_date: { habitId: habit.id, date } } });
-  const count = habit.targetCount > 1 ? Math.min((existing?.status === "DONE" ? existing.count : 0) + 1, 100000) : habit.targetCount;
+  const base = existing?.status === "DONE" ? existing.count : 0;
+  const count = habit.targetCount > 1 ? Math.min(Math.max(base, habit.targetCount), base + 1) : habit.targetCount;
   await prisma.checkIn.upsert({
     where: { habitId_date: { habitId: habit.id, date } },
     create: { habitId: habit.id, userId: p.sub, date, count, status: "DONE" },

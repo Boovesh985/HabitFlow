@@ -23,12 +23,12 @@ export default function TodayPage() {
   const toast = useUI((s) => s.toast);
   const { data: habits, isLoading } = useHabits();
   const { data: overview } = useOverview();
-  const form = useHabitForm();
+  const showForm = useHabitForm((s) => s.show);
   const [noteFor, setNoteFor] = useState<Habit | null>(null);
   const [showOther, setShowOther] = useState(false);
   const [justCompleted, setJustCompleted] = useState(false);
 
-  const { due, other, quit, counted, doneCount, dueCount } = useMemo(() => {
+  const { due, other, quit, counted, doneCount, dueCount, weeklyOpen } = useMemo(() => {
     const list = habits ?? [];
     const build = list.filter((h) => h.kind === "BUILD");
     const due = build.filter((h) => h.stats.dueToday || h.stats.doneToday);
@@ -43,6 +43,7 @@ export default function TodayPage() {
       counted,
       doneCount: counted.filter((h) => h.stats.doneToday).length,
       dueCount: counted.length,
+      weeklyOpen: due.filter((h) => h.frequencyType === "TIMES_PER_WEEK" && !h.stats.doneToday && h.stats.todayStatus !== "SKIPPED").length,
     };
   }, [habits]);
 
@@ -68,7 +69,7 @@ export default function TodayPage() {
   return (
     <div className="grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-10">
       <aside className="space-y-5 lg:sticky lg:top-[84px] lg:self-start">
-        <DaySheet day={today} habits={sheetHabits} week={week} doneCount={doneCount} dueCount={dueCount} justCompleted={justCompleted} empty={!habits?.length} />
+        <DaySheet day={today} habits={sheetHabits} week={week} doneCount={doneCount} dueCount={dueCount} justCompleted={justCompleted} empty={!habits?.length} weeklyOpen={weeklyOpen} />
       </aside>
 
       <div className="min-w-0 space-y-8">
@@ -91,7 +92,7 @@ export default function TodayPage() {
             title="Your first page is blank"
             body="Pick one habit small enough to do on your worst day. Two minutes of reading beats an hour you never start."
             action={
-              <button className="btn-pen" onClick={() => form.show()}>
+              <button className="btn-pen" onClick={() => showForm()}>
                 <Plus size={18} /> Add your first habit
               </button>
             }
@@ -108,7 +109,7 @@ export default function TodayPage() {
                       index={i}
                       habit={h}
                       stackParent={h.stackAfterId ? byId.get(h.stackAfterId) : undefined}
-                      onEdit={(x) => form.show(x)}
+                      onEdit={(x) => showForm(x)}
                       onNote={setNoteFor}
                     />
                   ))}
@@ -123,7 +124,7 @@ export default function TodayPage() {
                 <SectionHead>Staying off</SectionHead>
                 <ul className="sheet overflow-hidden">
                   {quit.map((h, i) => (
-                    <HabitCard key={h.id} index={i} habit={h} onEdit={(x) => form.show(x)} onNote={setNoteFor} />
+                    <HabitCard key={h.id} index={i} habit={h} onEdit={(x) => showForm(x)} onNote={setNoteFor} />
                   ))}
                 </ul>
               </section>
@@ -152,7 +153,7 @@ export default function TodayPage() {
                     >
                       <ul className="sheet mt-2.5 overflow-hidden">
                         {other.map((h) => (
-                          <HabitCard key={h.id} habit={h} onEdit={(x) => form.show(x)} onNote={setNoteFor} />
+                          <HabitCard key={h.id} habit={h} onEdit={(x) => showForm(x)} onNote={setNoteFor} />
                         ))}
                       </ul>
                     </motion.div>

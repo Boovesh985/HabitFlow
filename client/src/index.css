@@ -81,6 +81,8 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* Keep the scrollbar's space reserved so opening a sheet (which locks scrolling) doesn't shift the page. */
+  scrollbar-gutter: stable;
 }
 
 body {

@@ -112,11 +112,22 @@ function AccountMenu() {
   );
 }
 
+/** The add/edit sheets subscribe to their own stores, so opening one doesn't re-render the page under it. */
+function FormHosts() {
+  const form = useHabitForm();
+  const pform = useProjectForm();
+  return (
+    <>
+      <HabitForm open={form.open} habit={form.habit} onClose={form.close} />
+      <ProjectForm open={pform.open} project={pform.project} kind={pform.kind} onClose={pform.close} />
+    </>
+  );
+}
+
 export function Layout() {
   const location = useLocation();
   const outlet = useOutlet();
-  const form = useHabitForm();
-  const pform = useProjectForm();
+  const showForm = useHabitForm((s) => s.show);
 
   useEffect(() => {
     window.scrollTo({ top: 0 });
@@ -167,7 +178,7 @@ export function Layout() {
           </nav>
           <div className="ml-auto flex items-center gap-2.5">
             <LiveClock />
-            <button onClick={() => form.show()} className="btn-pen !px-3 sm:!px-4" aria-label="New habit">
+            <button onClick={() => showForm()} className="btn-pen !px-3 sm:!px-4" aria-label="New habit">
               <Plus size={18} strokeWidth={2.5} />
               <span className="hidden whitespace-nowrap sm:inline lg:hidden xl:inline">New habit</span>
             </button>
@@ -225,8 +236,7 @@ export function Layout() {
       </nav>
 
       <Toasts />
-      <HabitForm open={form.open} habit={form.habit} onClose={form.close} />
-      <ProjectForm open={pform.open} project={pform.project} kind={pform.kind} onClose={pform.close} />
+      <FormHosts />
     </div>
   );
 }
