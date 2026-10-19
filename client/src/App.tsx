@@ -120,7 +120,9 @@ function Routed() {
     return (
       <Suspense fallback={<FullSpinner />}>
         <Routes>
-          <Route path="*" element={<AuthPage />} />
+          {/* Signing in always lands on Today, not on whatever page was open when the session ended. */}
+          <Route index element={<AuthPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
     );

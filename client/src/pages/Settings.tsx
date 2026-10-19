@@ -287,6 +287,7 @@ function DeleteRow() {
   const [pw, setPw] = useState("");
   const logout = useAuth((s) => s.logout);
   const toast = useUI((s) => s.toast);
+  const qc = useQueryClient();
   return (
     <Row label={<span className="text-red">Delete account</span>} hint="Permanently removes your account and every habit, note and check-in." stack={open}>
       {!open ? (
@@ -300,6 +301,7 @@ function DeleteRow() {
             e.preventDefault();
             try {
               await api("/users/me", { method: "DELETE", body: { password: pw } });
+              qc.clear();
               logout();
             } catch (err) {
               toast({ kind: "error", title: (err as Error).message });
